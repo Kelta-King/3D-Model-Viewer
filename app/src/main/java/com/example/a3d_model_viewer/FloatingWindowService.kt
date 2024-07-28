@@ -39,6 +39,11 @@ class FloatingWindowService : Service() {
     private lateinit var choreographer: Choreographer
     private lateinit var modelViewer: ModelViewer
 
+    private var screenHeight:Int = 0
+    private var screenWidth:Int = 0
+    private var windowHeight:Int = 0
+    private var windowWidth:Int = 0
+
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
@@ -47,8 +52,8 @@ class FloatingWindowService : Service() {
         super.onCreate()
 
         val metrics = applicationContext.resources.displayMetrics
-        val width = metrics.widthPixels
-        val height = metrics.heightPixels
+        screenHeight = metrics.heightPixels
+        screenWidth = metrics.widthPixels
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
@@ -74,9 +79,12 @@ class FloatingWindowService : Service() {
             LAYOUT_TYPE = WindowManager.LayoutParams.TYPE_TOAST
         }
 
+        windowHeight = (screenHeight * 0.55).toInt()
+        windowWidth = (screenWidth * 0.55).toInt()
+
         floatWindowLayoutParams = WindowManager.LayoutParams(
-            (width * 0.55).toInt(),
-            (height * 0.55).toInt(),
+            windowWidth,
+            windowHeight,
             LAYOUT_TYPE!!,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
@@ -107,6 +115,8 @@ class FloatingWindowService : Service() {
             var y = 0f
             var px = 0.0
             var py = 0.0
+            var tempX:Int = 0
+            var tempY:Int = 0
             override fun onTouch(v: View?, event: MotionEvent?): Boolean {
                 Log.i("kelta", "On touch")
                 when (event!!.action) {
@@ -119,8 +129,19 @@ class FloatingWindowService : Service() {
                     }
 
                     MotionEvent.ACTION_MOVE -> {
-                        updatedFloatWindowLayoutParams.x = (x + event.rawX - px).toInt()
-                        updatedFloatWindowLayoutParams.y = (y + event.rawY - py).toInt()
+                        tempX = (x + event.rawX - px).toInt()
+                        tempY = (y + event.rawY - py).toInt()
+
+                        // Width check to avoid going beyond the screen
+                        if(tempX - (windowWidth / 2) <= (-(screenWidth / 2))) tempX = -(screenWidth / 2)
+                        if(tempX + (windowWidth / 2) > ((screenWidth / 2))) tempX = (screenWidth / 2)
+
+                        // Height check to avoid going beyond the screen
+                        if(tempY - (windowHeight / 2) <= (-(screenHeight / 2))) tempY = -(screenHeight / 2)
+                        if(tempY + (windowHeight / 2) > (screenHeight / 2)) tempY = (screenHeight / 2)
+
+                        updatedFloatWindowLayoutParams.x = tempX
+                        updatedFloatWindowLayoutParams.y = tempY
 
                         windowManager.updateViewLayout(floatView, updatedFloatWindowLayoutParams)
                     }
