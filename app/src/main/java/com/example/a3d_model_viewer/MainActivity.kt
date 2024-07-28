@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
         // Initialize choreographer and model loader started
         choreographer = Choreographer.getInstance()
         modelLoader = ModelLoader()
-        modelLoader.onCreate(surfaceView, choreographer, assets, "scene", "venetian_crossroads_2k", ModelLoader.Formats.GLTF)
+        modelLoader.onCreate(surfaceView, choreographer, assets, "construction_worker", "venetian_crossroads_2k", ModelLoader.Formats.GLB)
     }
 
     // Lifecycle method called when the activity is resumed

@@ -16,14 +16,17 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.ImageView
 
+// Floating window service extending Service
 class FloatingWindowService : Service() {
 
     companion object {
+        // Initialize the Model Loader
         init {
             ModelLoader.init()
         }
     }
 
+    // Lateint properties for important components
     private lateinit var floatView: ViewGroup
     private lateinit var floatWindowLayoutParams: WindowManager.LayoutParams
     private var LAYOUT_TYPE: Int? = null
@@ -41,55 +44,32 @@ class FloatingWindowService : Service() {
     private var windowHeight:Int = 0
     private var windowWidth:Int = 0
 
+    // Not a binder service
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
 
+    // Creating the service
     @SuppressLint("InflateParams", "ClickableViewAccessibility")
     override fun onCreate() {
         super.onCreate()
 
+        // Calculation of metrices
         val metrics = applicationContext.resources.displayMetrics
         screenHeight = metrics.heightPixels
         screenWidth = metrics.widthPixels
 
+        // Window manager object creation
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
+        // Using inflater to inflate floating_layout in floatView as viewGroup
         val inflater = baseContext.getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-
         floatView = inflater.inflate(R.layout.floating_layout, null) as ViewGroup
 
-        surfaceView = floatView.findViewById(R.id.surfaceView)
+
+        // Layout's buttons interaction
         btnMax = floatView.findViewById(R.id.maximizeButton)
         btnClose = floatView.findViewById(R.id.closeButton)
-
-        choreographer = Choreographer.getInstance()
-
-        modelLoader = ModelLoader()
-        modelLoader.onCreate(surfaceView, choreographer, assets, "DamagedHelmet", "venetian_crossroads_2k", ModelLoader.Formats.GLB)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            LAYOUT_TYPE = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            LAYOUT_TYPE = WindowManager.LayoutParams.TYPE_TOAST
-        }
-
-        windowHeight = (screenHeight * 0.55).toInt()
-        windowWidth = (screenWidth * 0.55).toInt()
-
-        floatWindowLayoutParams = WindowManager.LayoutParams(
-            windowWidth,
-            windowHeight,
-            LAYOUT_TYPE!!,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        )
-
-        floatWindowLayoutParams.gravity = Gravity.CENTER
-        floatWindowLayoutParams.x = 0
-        floatWindowLayoutParams.y = 0
-
-        windowManager.addView(floatView, floatWindowLayoutParams)
 
         btnMax.setOnClickListener {
             stopSelf()
@@ -104,6 +84,38 @@ class FloatingWindowService : Service() {
             windowManager.removeView(floatView)
         }
 
+        // ModelLoader interaction for 3D viewer
+        surfaceView = floatView.findViewById(R.id.surfaceView)
+        choreographer = Choreographer.getInstance()
+        modelLoader = ModelLoader()
+        modelLoader.onCreate(surfaceView, choreographer, assets, "construction_worker", "venetian_crossroads_2k", ModelLoader.Formats.GLB)
+
+        // Defining the layout type
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            LAYOUT_TYPE = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            LAYOUT_TYPE = WindowManager.LayoutParams.TYPE_TOAST
+        }
+
+        // Defining height and width of floating window
+        windowHeight = (screenHeight * 0.55).toInt()
+        windowWidth = (screenWidth * 0.55).toInt()
+
+        // Floating window parameters definition
+        floatWindowLayoutParams = WindowManager.LayoutParams(
+            windowWidth,
+            windowHeight,
+            LAYOUT_TYPE!!,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
+        )
+
+        // Defining the gravity of float view
+        floatWindowLayoutParams.gravity = Gravity.CENTER
+        floatWindowLayoutParams.x = 0
+        floatWindowLayoutParams.y = 0
+
+        // On touch listeners of float view
         floatView.setOnTouchListener(object : View.OnTouchListener {
             val updatedFloatWindowLayoutParams = floatWindowLayoutParams
             var x = 0f
@@ -143,6 +155,11 @@ class FloatingWindowService : Service() {
                 return false
             }
         })
+
+        // Adding floatView to the window using window manager with parameters
+        windowManager.addView(floatView, floatWindowLayoutParams)
+
+        // Starting the modelLoader
         modelLoader.onResume()
     }
 
