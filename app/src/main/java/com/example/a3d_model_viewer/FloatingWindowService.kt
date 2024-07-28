@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.ImageView
 import com.google.android.filament.Skybox
 import com.google.android.filament.utils.KtxLoader
 import com.google.android.filament.utils.ModelViewer
@@ -32,7 +33,8 @@ class FloatingWindowService : Service() {
     private var LAYOUT_TYPE: Int? = null
     private lateinit var windowManager: WindowManager
 
-    private lateinit var btnMax: Button
+    private lateinit var btnMax: ImageView
+    private lateinit var btnClose: ImageView
     private lateinit var surfaceView: SurfaceView
     private lateinit var choreographer: Choreographer
     private lateinit var modelViewer: ModelViewer
@@ -56,6 +58,7 @@ class FloatingWindowService : Service() {
 
         surfaceView = floatView.findViewById(R.id.surfaceView)
         btnMax = floatView.findViewById(R.id.maximizeButton)
+        btnClose = floatView.findViewById(R.id.closeButton)
 
         choreographer = Choreographer.getInstance()
         modelViewer = ModelViewer(surfaceView)
@@ -91,6 +94,11 @@ class FloatingWindowService : Service() {
             val back = Intent(this@FloatingWindowService, MainActivity::class.java)
             back.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             startActivity(back)
+        }
+
+        btnClose.setOnClickListener {
+            stopSelf()
+            windowManager.removeView(floatView)
         }
 
         floatView.setOnTouchListener(object : View.OnTouchListener {
@@ -135,6 +143,9 @@ class FloatingWindowService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         choreographer.removeFrameCallback(frameCallback)
+        stopSelf()
+        windowManager.removeView(floatView)
+
     }
 
     private fun loadGlb(name: String) {

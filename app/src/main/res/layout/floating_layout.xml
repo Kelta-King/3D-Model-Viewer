@@ -19,35 +19,35 @@
         android:orientation="horizontal"
         android:weightSum="3">
 
-        <Button
+        <ImageView
             android:id="@+id/maximizeButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:drawableTop="@drawable/ic_maximize"
-            android:drawablePadding="10dp"
-            android:text="Maximize"
-            android:gravity="center"/>
+            android:background="@color/green"
+            android:src="@drawable/maximize_icon"
+            android:padding="20dp"
+            android:scaleType="centerInside" />
 
-        <Button
+        <ImageView
             android:id="@+id/moveButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:drawableTop="@drawable/ic_move"
-            android:drawablePadding="10dp"
-            android:text="Move"
-            android:gravity="center"/>
+            android:background="@color/blue"
+            android:src="@drawable/move_icon"
+            android:padding="20dp"
+            android:scaleType="centerInside" />
 
-        <Button
+        <ImageView
             android:id="@+id/closeButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:drawableTop="@drawable/ic_close"
-            android:drawablePadding="10dp"
-            android:text="Close"
-            android:gravity="center"/>
+            android:background="@color/red"
+            android:src="@drawable/close_icon"
+            android:padding="20dp"
+            android:scaleType="centerInside" />
     </LinearLayout>
 
 </RelativeLayout>
