@@ -1,5 +1,6 @@
 package com.example.a3d_model_viewer
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.AlertDialog
 import android.content.DialogInterface
@@ -9,110 +10,71 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
-import android.util.Log
 import android.view.Choreographer
 import android.view.SurfaceView
 import android.widget.Button
-import com.google.android.filament.Skybox
-import com.google.android.filament.utils.KtxLoader
-import com.google.android.filament.utils.ModelViewer
-import com.google.android.filament.utils.Utils
-import java.nio.ByteBuffer
+import android.widget.Toast
 
 class MainActivity : ComponentActivity() {
 
     companion object {
-        init { Utils.init() }
+        // Initialize the Model Loader
+        init { ModelLoader.init() }
     }
 
+    // Lateinit properties for essential components
     private lateinit var dialog: AlertDialog
     private lateinit var btnMin: Button
     private lateinit var surfaceView: SurfaceView
     private lateinit var choreographer: Choreographer
-    private lateinit var modelViewer: ModelViewer
+    private lateinit var modelLoader: ModelLoader
 
+    // Lifecycle method called when the activity is created
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Initialize views
         setContentView(R.layout.activity_main)
         surfaceView = findViewById(R.id.surfaceView)
         btnMin = findViewById(R.id.minimizeButton)
-        choreographer = Choreographer.getInstance()
-        modelViewer = ModelViewer(surfaceView)
-        surfaceView.setOnTouchListener(modelViewer)
 
+        // Set the click listener for the minimize button
         btnMin.setOnClickListener {
-            Log.i("kelta", "Click Minimize")
+            // Check if the overlay permission is granted
             if(checkOverlayPermission()) {
+                // Start the floating window service
                 startService(Intent(this@MainActivity, FloatingWindowService::class.java))
                 finish()
             }
             else {
+                Toast.makeText(this, "Overlay permission required", Toast.LENGTH_SHORT).show()
+                // Request the overlay permission
                 requestFloatingWindowPermission()
             }
         }
 
-        loadGlb("DamagedHelmet")
-        loadEnvironment("venetian_crossroads_2k")
-        modelViewer.scene.skybox = Skybox.Builder().build(modelViewer.engine)
+        // Initialize choreographer and model loader started
+        choreographer = Choreographer.getInstance()
+        modelLoader = ModelLoader()
+        modelLoader.onCreate(surfaceView, choreographer, assets, "scene", "venetian_crossroads_2k", ModelLoader.Formats.GLTF)
     }
 
-
-
-    private val frameCallback = object : Choreographer.FrameCallback {
-        override fun doFrame(currentTime: Long) {
-            choreographer.postFrameCallback(this)
-            modelViewer.render(currentTime)
-        }
-    }
-
+    // Lifecycle method called when the activity is resumed
     override fun onResume() {
         super.onResume()
-        Log.i("kelta", "resume")
-        choreographer.postFrameCallback(frameCallback)
+        modelLoader.onResume()
     }
 
+    // Lifecycle method called when the activity is paused
     override fun onPause() {
         super.onPause()
-        Log.i("kelta", "pause")
-        choreographer.removeFrameCallback(frameCallback)
+        modelLoader.onPause()
     }
 
+    // Lifecycle method called when the activity is destroyed
     override fun onDestroy() {
         super.onDestroy()
-        choreographer.removeFrameCallback(frameCallback)
-    }
-
-    private fun loadGlb(name: String) {
-        val buffer = readAsset("models/$name.glb")
-        modelViewer.loadModelGlb(buffer)
-        modelViewer.transformToUnitCube()
-    }
-
-    private fun readAsset(assetName: String): ByteBuffer {
-        return try {
-            val input = assets.open(assetName)
-            val bytes = ByteArray(input.available())
-            input.read(bytes)
-            ByteBuffer.wrap(bytes)
-        } catch (e: Exception) {
-            Log.e("Kelta", "Error: " + e.message.toString())
-            ByteBuffer.allocate(0)
-        }
-    }
-
-    private fun loadEnvironment(ibl: String) {
-        // Create the indirect light source and add it to the scene.
-        var buffer = readAsset("envs/$ibl/${ibl}_ibl.ktx")
-        KtxLoader.createIndirectLight(modelViewer.engine, buffer).apply {
-            intensity = 50_000f
-            modelViewer.scene.indirectLight = this
-        }
-
-        // Create the sky box and add it to the scene.
-        buffer = readAsset("envs/$ibl/${ibl}_skybox.ktx")
-        KtxLoader.createSkybox(modelViewer.engine, buffer).apply {
-            modelViewer.scene.skybox = this
-        }
+        modelLoader.onDestroy()
     }
 
     private fun isServiceRunning(): Boolean {
@@ -125,12 +87,14 @@ class MainActivity : ComponentActivity() {
         return false
     }
 
+    // Method to request the floating window permission
     private fun requestFloatingWindowPermission() {
-        var builder = AlertDialog.Builder(this)
+        val builder = AlertDialog.Builder(this)
         builder.setCancelable(true)
         builder.setTitle("Screen overlay permission")
         builder.setMessage("Enable display over other apps")
-        builder.setPositiveButton("Open Settings", DialogInterface.OnClickListener{ dialog, which ->
+        builder.setPositiveButton("Open Settings", DialogInterface.OnClickListener{ _, _ ->
+            // Open the settings to grant overlay permission
             val intent = Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                 Uri.parse("package:$packageName")
@@ -141,6 +105,7 @@ class MainActivity : ComponentActivity() {
         dialog.show()
     }
 
+    // Method to check if the overlay permission is granted
     private fun checkOverlayPermission(): Boolean {
         return if(Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
             Settings.canDrawOverlays(this)
